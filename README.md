@@ -34,18 +34,24 @@ Or install it yourself as:
 
 ```bash
 bundle exec async-runner --help
-#        Scalable multi-thread multi-process container
-#
-#        [--verbose | --quiet]               Verbosity of output for debugging.     
-#        [-h/--help]                         Print out help information.            
-#        [-v/--version]                      Print out the application version.     
-#        [--restart]                         Restart containers if they fail        
-#        [--forked | --threaded | --hybrid]  Select a specific parallelism model.      (default: forked)
-#        [-n/--count <count>]                Number of instances to start.             (default: 10)    
-#        [--forks <count>]                   Number of forks (hybrid only).         
-#        [--threads <count>]                 Number of threads (hybrid only).       
-#        [-j/--jobs <count>]                 Maximum number of async (parallel) jobs.  (default: 1000)  
-#        <file>                              File to run in containers 
+#    async-runner [-h/--help] [-v/--version] <command>
+#            Scalable multi-thread multi-process container
+#    
+#            [-h/--help]     Print out help information.                
+#            [-v/--version]  Print out the application version.         
+#            <command>       Only ["run", Async::Runner::Commands::Run].
+#    
+#            run [--verbose | --quiet] [-h/--help] [-v/--version] [--restart] [--forked | --threaded | --hybrid] [-n/--count <count>] [--forks <count>] [--threads <count>] [-j/--jobs <count>] [-f/--file <file>]
+#                    [--verbose | --quiet]               Verbosity of output for debugging.     
+#                    [-h/--help]                         Print out help information.            
+#                    [-v/--version]                      Print out the application version.     
+#                    [--restart]                         Restart containers if they fail        
+#                    [--forked | --threaded | --hybrid]  Select a specific parallelism model.     (default: forked)
+#                    [-n/--count <count>]                Number of instances to start.            (default: 10)    
+#                    [--forks <count>]                   Number of forks (hybrid only).         
+#                    [--threads <count>]                 Number of threads (hybrid only).       
+#                    [-j/--jobs <count>]                 Maximum number of async, parallel jobs.  (default: 1000)  
+#                    [-f/--file <file>]                  File to run in containers              
 ```
 
 Let's suppose you have the following script:
@@ -71,12 +77,11 @@ end
 Run this script with the following command:
 
 ```bash
-bundle exec async-runner -n 1 -j 2 script.rb
+bundle exec async-runner --count 1 --jobs 2 -f script.rb
 ```
 
 This command makes sure there are only 2 async jobs at a time. In other words it runs 2 jobs, waits 2 seconds and runs 2 more jobs. 
-You can limit the number of jobs with `-j` option.
-`-n` option
+You can limit the number of jobs with `-j/--jobs` option.
 
 ```
  0.04s     info: Setup phase. Executed once... [ec=0x2bc] [pid=38433] [2022-10-25 20:00:56 +0300]
@@ -109,17 +114,42 @@ You can limit the number of jobs with `-j` option.
 ### Script DSL
 
 ```ruby
-setup do |job|
-  job.limit 100
-  job.progress total: 200 # enables progress bar in console
+setup do
+  # runs in the parent process/thread...
 end
 
 run do |job|
+  # runs in a child process/thread...
+
   job.async do
     # your async jobs goes here...
   end
   # other code
 end
+
+run do 
+  # this block waits the first one to be finished...
+end
+
+teardown do
+  # runs in the parent process/thread...
+end
+```
+
+### Standalone script example
+
+```ruby
+#!/usr/bin/env bundle exec async-runner run -f
+# frozen_string_literal: true
+
+run do 
+  # your code goes here...
+end
+```
+
+```bash
+> chmod +x ./script.rb
+> ./script.rb 
 ```
 
 ## Development
